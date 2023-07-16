@@ -143,6 +143,7 @@ func TestHide(t *testing.T) {
 	}
 	for _, tCase := range testCases {
 		actual := Hide(tCase.input)
+		t.Log(actual)
 		expected := tCase.prefix + hashAndEncode([]byte(tCase.input))
 		if actual != expected {
 			t.Errorf("For \"%s\", expected \"%s\", but got \"%s\"", tCase.input, expected, actual)

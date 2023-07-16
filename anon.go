@@ -43,8 +43,8 @@ var (
 )
 
 type anonymizer struct {
-	name  string
-	regex *regexp.Regexp
+	prefix string
+	regex  *regexp.Regexp
 }
 
 var anonList = []anonymizer{
@@ -53,13 +53,17 @@ var anonList = []anonymizer{
 	{"IP6", IPv6RegEx},
 }
 
+func Add(prefix string, regex *regexp.Regexp) {
+	anonList = append(anonList, anonymizer{prefix, regex})
+}
+
 // Hide - anonymize given value
 func Hide(v any) string {
 	s := fmt.Sprintf("%v", v)
 	h := hashAndEncode([]byte(s))
 	for _, each := range anonList {
 		if each.regex.Match([]byte(s)) {
-			return each.name + ":" + h
+			return each.prefix + ":" + h
 		}
 	}
 	return h
@@ -76,7 +80,7 @@ func mask(input string) (result string) {
 	result = input
 	for _, each := range anonList {
 		result = each.regex.ReplaceAllStringFunc(result, func(s string) string {
-			return each.name + ":" + hashAndEncode([]byte(s))
+			return each.prefix + ":" + hashAndEncode([]byte(s))
 		})
 	}
 	return

@@ -66,7 +66,7 @@ var (
 
 func init() {
 	seed := time.Now().UnixNano()
-	salt = make([]byte, 16)
+	salt = make([]byte, 20)
 	rand.New(rand.NewSource(seed)).Read(salt)
 }
 

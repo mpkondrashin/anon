@@ -1,5 +1,6 @@
 /*
 Anon (c) 2023 by Mikhail Kondrashin (mkondrashin@gmail.com)
+github.com/mpkondrashin/anon
 
 anon.go
 

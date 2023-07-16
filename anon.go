@@ -13,8 +13,10 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io"
+	"math/rand"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
@@ -58,6 +60,21 @@ func Add(prefix string, regex *regexp.Regexp) {
 	anonList = append(anonList, anonymizer{prefix, regex})
 }
 
+var (
+	salt []byte
+)
+
+func init() {
+	seed := time.Now().UnixNano()
+	salt = make([]byte, 16)
+	rand.New(rand.NewSource(seed)).Read(salt)
+}
+
+// SetSalt - provides ability to have same salt between program launches
+func SetSalt(s []byte) {
+	salt = s
+}
+
 // Hide - anonymize given value
 func Hide(v any) string {
 	s := fmt.Sprintf("%v", v)
@@ -74,7 +91,7 @@ func hashAndEncode(data []byte) string {
 	//s := fmt.Sprintf("%v", v)
 	hasher := sha1.New()
 	hasher.Write(data)
-	return encode(hasher.Sum(nil))
+	return encode(hasher.Sum(salt))
 }
 
 func mask(input string) (result string) {

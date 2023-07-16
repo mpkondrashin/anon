@@ -7,6 +7,8 @@ anon.go
 Go log anonymizer.
 */
 
+// Package anon provides ability to avoid logging sensitive data by anonymizing it automatically using regexes.
+// Anon supports IPv4, IPv6 and domain names and can be extended to other data types.
 package anon
 
 import (
@@ -22,7 +24,7 @@ import (
 var (
 	ipv4NumBlock     = `(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])`
 	ipv4RegexPattern = ipv4NumBlock + `\.` + ipv4NumBlock + `\.` + ipv4NumBlock + `\.` + ipv4NumBlock
-	IPv4RegEx        = regexp.MustCompile(ipv4RegexPattern)
+	ipv4RegEx        = regexp.MustCompile(ipv4RegexPattern)
 
 	ipv6Blocks = []string{
 		`([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}`,         // 1:2:3:4:5:6:7:8
@@ -39,10 +41,10 @@ var (
 		`([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])`,    // 2001:db8:3:4::192.0.2.33  64:ff9b::192.0.2.33 (IPv4-Embedded IPv6 Address)
 	}
 	ipv6RegexPattern = strings.Join(ipv6Blocks, "|")
-	IPv6RegEx        = regexp.MustCompile(ipv6RegexPattern)
+	ipv6RegEx        = regexp.MustCompile(ipv6RegexPattern)
 
 	domainNamePattern = `([a-zA-Z0-9][a-zA-Z0-9.-]{0,62}\.)+[a-zA-Z]{2,}`
-	DomainNameRegEx   = regexp.MustCompile(domainNamePattern)
+	domainNameRegEx   = regexp.MustCompile(domainNamePattern)
 )
 
 type anonymizer struct {
@@ -51,28 +53,30 @@ type anonymizer struct {
 }
 
 var anonList = []anonymizer{
-	{"Domain", DomainNameRegEx},
-	{"IP", IPv4RegEx},
-	{"IP6", IPv6RegEx},
+	{"Domain", domainNameRegEx},
+	{"IP", ipv4RegEx},
+	{"IP6", ipv6RegEx},
 }
 
+// Add provides ability to extend list of types of anonymized data
+// as suun as one can provide appropriate regex
 func Add(prefix string, regex *regexp.Regexp) {
 	anonList = append(anonList, anonymizer{prefix, regex})
 }
 
 var (
-	salt []byte
+	saltData []byte
 )
 
 func init() {
 	seed := time.Now().UnixNano()
-	salt = make([]byte, 20)
-	rand.New(rand.NewSource(seed)).Read(salt)
+	saltData = make([]byte, 20)
+	rand.New(rand.NewSource(seed)).Read(saltData)
 }
 
-// SetSalt - provides ability to have same salt between program launches
-func SetSalt(s []byte) {
-	salt = s
+// SetSalt - set fixed salt value instead generated randomly on each program run.
+func SetSalt(salt []byte) {
+	saltData = salt
 }
 
 // Hide - anonymize given value
@@ -91,10 +95,10 @@ func hashAndEncode(data []byte) string {
 	//s := fmt.Sprintf("%v", v)
 	hasher := sha1.New()
 	hasher.Write(data)
-	return encode(hasher.Sum(salt))
+	return encode(hasher.Sum(saltData))
 }
 
-func mask(input string) (result string) {
+func anonymize(input string) (result string) {
 	result = input
 	for _, each := range anonList {
 		result = each.regex.ReplaceAllStringFunc(result, func(s string) string {
@@ -104,18 +108,22 @@ func mask(input string) (result string) {
 	return
 }
 
+// Writer - io.Writer comply struct that anonymezes all of the date written into it
+// before passing to the next io.Writer.
 type Writer struct {
 	target io.Writer
 }
 
+// New - return new Writer to anonymize all of the data written to target io.Writer.
 func New(target io.Writer) Writer {
 	return Writer{
 		target: target,
 	}
 }
 
+// Write - anonymize data and write in to the target io.Writer
 func (w Writer) Write(p []byte) (n int, err error) {
-	s := mask(string(p))
+	s := anonymize(string(p))
 	return w.target.Write([]byte(s))
 }
 

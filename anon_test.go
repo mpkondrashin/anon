@@ -17,7 +17,7 @@ import (
 
 func TestIPv4(t *testing.T) {
 	tCase := "192.168.1.1"
-	match := IPv4RegEx.Match([]byte(tCase))
+	match := ipv4RegEx.Match([]byte(tCase))
 	if !match {
 		t.Errorf("Failed on %s", tCase)
 	}
@@ -41,7 +41,7 @@ func TestIPv6(t *testing.T) {
 	}
 	for _, ipv6 := range tCases {
 		t.Run(ipv6, func(t *testing.T) {
-			match := IPv6RegEx.Match([]byte(ipv6))
+			match := ipv6RegEx.Match([]byte(ipv6))
 			if !match {
 				t.Errorf("Failed on %s", ipv6)
 			}
@@ -63,7 +63,7 @@ func TestDomainName(t *testing.T) {
 	}
 	for _, tCase := range tCases {
 		t.Run(tCase.name, func(t *testing.T) {
-			match := DomainNameRegEx.Match([]byte(tCase.name))
+			match := domainNameRegEx.Match([]byte(tCase.name))
 			if match != tCase.expected {
 				t.Errorf("%s: expected %v but got %v", tCase.name, tCase.expected, match)
 			}

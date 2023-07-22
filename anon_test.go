@@ -9,8 +9,11 @@ Test functions
 package anon
 
 import (
+	"fmt"
+	"log"
 	"math/big"
 	"math/rand"
+	"os"
 	"strings"
 	"testing"
 )
@@ -159,4 +162,29 @@ func TestOrder(t *testing.T) {
 	output := a.Anonymize(input)
 	t.Log(input)
 	t.Log(output)
+}
+
+func ExampleAnonymizer_Anonymize() {
+	a := New(IP4).AddConfidentialDomain("local").SetSalt([]byte{})
+	fmt.Println(a.Anonymize("My address is 192.168.10.25 or tiger.local"))
+	// Output: My address is IP:go7YgcKQDilELfBiQr3HIXGHEXd or DNS:hAX_ZtbMRi9jd38jWFMpLkx9Tgd
+}
+func ExampleAnonymizer_Hide_arbitrary() {
+	a := New(IP4).SetSalt([]byte{})
+	fmt.Println(a.Hide("My secret"))
+	// Output: YC1WCkLbAoVYEVi5q7dRAVD2bz1
+}
+func ExampleAnonymizer_Hide_ip() {
+	a := New(IP4).AddConfidentialDomain("local").SetSalt([]byte{})
+	fmt.Println(a.Hide("10.10.1.1"))
+	// Output: IP:Fi3c0rJAQm7qTtitvGsaM5EZ5H6
+}
+
+func ExampleAnonymizer_Writer() {
+	anonymizer := New(IP4).SetSalt([]byte{})
+	writer := anonymizer.Writer(os.Stdout)
+	log.SetOutput(writer)
+	log.SetFlags(0)
+	log.Print("My address is 10.10.1.1")
+	// Output: My address is IP:Fi3c0rJAQm7qTtitvGsaM5EZ5H6
 }

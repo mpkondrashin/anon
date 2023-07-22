@@ -21,7 +21,10 @@ import (
 	"io"
 	"math/rand"
 	"regexp"
+	"sort"
 	"time"
+
+	"golang.org/x/exp/constraints"
 )
 
 // Anonymizer - struct to anonymize text.
@@ -31,15 +34,13 @@ type Anonymizer struct {
 }
 
 // New - return new Anonymizer with random salt.
-func New(types DataType) *Anonymizer {
+func New(types ...DataType) *Anonymizer {
 	a := Anonymizer{
 		salt: randomSalt(),
 	}
-	for i := 0; i < 64; i++ {
-		t := DataType(1 << i)
-		if t&types == 0 {
-			continue
-		}
+	sTypes := types[:]
+	sortSlice(sTypes)
+	for _, t := range sTypes {
 		a.confidentialDataList = append(a.confidentialDataList, confidentailData[t])
 	}
 	return &a
@@ -83,12 +84,6 @@ func (a *Anonymizer) Hide(v any) string {
 	return h
 }
 
-func (a *Anonymizer) hashAndEncode(data []byte) string {
-	hasher := sha1.New()
-	hasher.Write(data)
-	return encode(hasher.Sum(a.salt))
-}
-
 // Anonymize - anonymyzer confidential data found in string.
 func (a *Anonymizer) Anonymize(input string) (result string) {
 	result = input
@@ -98,19 +93,6 @@ func (a *Anonymizer) Anonymize(input string) (result string) {
 		})
 	}
 	return
-}
-
-type confidentialData struct {
-	prefix  string
-	regex   *regexp.Regexp
-	example string
-}
-
-func randomSalt() []byte {
-	seed := time.Now().UnixNano()
-	salt := make([]byte, 20)
-	rand.New(rand.NewSource(seed)).Read(salt)
-	return salt
 }
 
 // Writer - io.Writer comply struct that anonymezes all of the date written into it
@@ -134,8 +116,48 @@ func (w Writer) Write(p []byte) (n int, err error) {
 	return w.target.Write([]byte(s))
 }
 
+func (a *Anonymizer) hashAndEncode(data []byte) string {
+	hasher := sha1.New()
+	hasher.Write(data)
+	return encode(hasher.Sum(a.salt))
+}
+
+var (
+	defaultTypes = []DataType{Email, CreditCard, IP4, IP6, URL}
+	// defaultAnonymizer - anonymizer used for package global functions.
+	defaultAnonymizer = New(defaultTypes...)
+)
+
+// Hide - anonymize given value using default anonymizer.
+func Hide(v any) string {
+	return defaultAnonymizer.Hide(v)
+}
+
+// Anonymize - anonymize confidential data found in string using default anonymizer.
+func Anonymize(input string) string {
+	return defaultAnonymizer.Anonymize(input)
+}
+
+// NewWriter - return new Writer to anonymize all of the data written to target io.Writer
+// using default anonymizer.
+func NewWriter(target io.Writer) Writer {
+	return defaultAnonymizer.Writer(target)
+}
+
+func sortSlice[T constraints.Ordered](s []T) {
+	sort.Slice(s, func(i, j int) bool {
+		return s[i] < s[j]
+	})
+}
+
+func randomSalt() []byte {
+	seed := time.Now().UnixNano()
+	salt := make([]byte, 20)
+	rand.New(rand.NewSource(seed)).Read(salt)
+	return salt
+}
+
 func encode(data []byte) string {
-	//fmt.Println(len(data), data)
 	characters := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRTSUVWXYZ-_"
 	length := (len(data)*4 + 2) / 3
 	result := make([]byte, length)
@@ -169,58 +191,5 @@ func encode(data []byte) string {
 			r++
 		}
 	}
-	//fmt.Println("RESULT", len(result))
 	return string(result)
 }
-
-// defaultAnonymizer - anonymizer used for package global functions.
-var defaultAnonymizer = New(Email | CreditCard | IP4 | IP6 | URL)
-
-// Hide - anonymize given value using default anonymizer.
-func Hide(v any) string {
-	return defaultAnonymizer.Hide(v)
-}
-
-// Anonymizer - anonymize confidential data found in string using default anonymizer.
-func Anonymize(input string) string {
-	return defaultAnonymizer.Anonymize(input)
-}
-
-// NewWriter - return new Writer to anonymize all of the data written to target io.Writer
-// using default anonymizer.
-func NewWriter(target io.Writer) Writer {
-	return defaultAnonymizer.Writer(target)
-}
-
-/*
-var (
-
-	ipv4NumBlock     = `(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])`
-	ipv4RegexPattern = ipv4NumBlock + `\.` + ipv4NumBlock + `\.` + ipv4NumBlock + `\.` + ipv4NumBlock
-	ipv4RegEx        = regexp.MustCompile(ipv4RegexPattern)
-	ConfDataIPv4     = confidentialData{"IP", ipv4RegEx, "192.168.100.1"}
-
-	ipv6Blocks = []string{
-		`([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}`,         // 1:2:3:4:5:6:7:8
-		`([0-9a-fA-F]{1,4}:){1,7}:`,                        // 1::                              1:2:3:4:5:6:7::
-		`([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}`,        // 1::8             1:2:3:4:5:6::8  1:2:3:4:5:6::8
-		`([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}`, // 1::7:8           1:2:3:4:5::7:8  1:2:3:4:5::8
-		`([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}`, // 1::6:7:8         1:2:3:4::6:7:8  1:2:3:4::8
-		`([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}`, // 1::5:6:7:8       1:2:3::5:6:7:8  1:2:3::8
-		`([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}`, // 1::4:5:6:7:8     1:2::4:5:6:7:8  1:2::8
-		`[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})`,      // 1::3:4:5:6:7:8   1::3:4:5:6:7:8  1::8
-		`:((:[0-9a-fA-F]{1,4}){1,7}|:)`,                    // ::2:3:4:5:6:7:8  ::2:3:4:5:6:7:8 ::8       ::
-		`fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}`,    // fe80::7:8%eth0   fe80::7:8%1     (link-local IPv6 addresses with zone index)
-		`::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])`, // ::255.255.255.255   ::ffff:255.255.255.255  ::ffff:0:255.255.255.255  (IPv4-mapped IPv6 addresses and IPv4-translated addresses)
-		`([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])`,    // 2001:db8:3:4::192.0.2.33  64:ff9b::192.0.2.33 (IPv4-Embedded IPv6 Address)
-	}
-	ipv6RegexPattern = strings.Join(ipv6Blocks, "|")
-	ipv6RegEx        = regexp.MustCompile(ipv6RegexPattern)
-	ConfDataIPv6     = confidentialData{"IP6", domainNameRegEx, "1:2:3:4:5:6:7:8"}
-
-	domainNamePattern = `([a-zA-Z0-9][a-zA-Z0-9.-]{0,62}\.)+[a-zA-Z]{2,}`
-	domainNameRegEx   = regexp.MustCompile(domainNamePattern)
-	ConfDataDomain    = confidentialData{"Domain", domainNameRegEx, "www.yahoo.com"}
-
-)
-*/

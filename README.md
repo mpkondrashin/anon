@@ -3,13 +3,14 @@
 Package anon provides ability to avoid logging sensitive data by anonymizing it automatically using regexes.
 Anon supports IPv4, IPv6 and domain names and can be extended to other data types.
 
+
 ## Functions:
 
 ### func Add
-```golang
+```go
 func Add(prefix string, regex *regexp.Regexp)
 ```
-Add provides ability to extend list of types of anonymized data as suun as one can provide appropriate regex
+Add provides ability to extend list of types of anonymized data as soon as one can provide appropriate regex
 
 ### func Hide
 ```go
@@ -17,7 +18,7 @@ func Hide(v any) string
 ```
 Hide - anonymize given value
 
-func SetSalt
+### func SetSalt
 ```go
 func SetSalt(s []byte)
 ```

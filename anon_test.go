@@ -188,3 +188,8 @@ func ExampleAnonymizer_Writer() {
 	log.Print("My address is 10.10.1.1")
 	// Output: My address is IP:Fi3c0rJAQm7qTtitvGsaM5EZ5H6
 }
+
+func ExampleAnonymize() {
+	fmt.Println(Anonymize("My address is 192.168.10.25"))
+	// Output: My address is IP:go7YgcKQDilELfBiQr3HIXGHEXd
+}

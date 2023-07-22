@@ -125,6 +125,11 @@ func (a *Anonymizer) hashAndEncode(data []byte) string {
 // defaultAnonymizer - anonymizer used for package global functions.
 var defaultAnonymizer = New(Email, CreditCard, IP4, IP6, URL)
 
+// SetSalt - set salt value instead of random default value
+func SetSalt(salt []byte) {
+	defaultAnonymizer.SetSalt(salt)
+}
+
 // Hide - anonymize given value using default anonymizer.
 func Hide(v any) string {
 	return defaultAnonymizer.Hide(v)

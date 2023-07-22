@@ -27,6 +27,10 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// DataType - confidential data type
+
+//go:generate enum -package=anon -type=DataType -noprefix -values=Email,CreditCard,UUID3,UUID4,UUID5,UUID,Latitude,Longitude,IP4,IP6,DNSName,URL,SSN,IMEI,IMSI,E164
+
 // Anonymizer - struct to anonymize text.
 type Anonymizer struct {
 	salt                 []byte
@@ -88,38 +92,41 @@ func (a *Anonymizer) Hide(v any) string {
 func (a *Anonymizer) Anonymize(input string) (result string) {
 	result = input
 	for _, each := range a.confidentialDataList {
+		//fmt.Fprintln(os.Stderr, result)
 		result = each.regex.ReplaceAllStringFunc(result, func(s string) string {
+			//fmt.Print("RRR", result)
 			return each.prefix + ":" + a.hashAndEncode([]byte(s))
 		})
 	}
 	return
 }
 
-// Writer - io.Writer comply struct that anonymezes all of the date written into it
-// before passing to the next io.Writer.
-type Writer struct {
+// writer - io.writer comply struct that anonymezes all of the date written into it
+// before passing to the next io.writer.
+type writer struct {
 	anonymyzer *Anonymizer
 	target     io.Writer
 }
 
 // Writer - return new io.Writer to anonymize data before writing to the target io.Writer.
-func (a *Anonymizer) Writer(target io.Writer) Writer {
-	return Writer{
+func (a *Anonymizer) Writer(target io.Writer) writer {
+	return writer{
 		anonymyzer: a,
 		target:     target,
 	}
 }
 
 // Write - anonymize data and write in to the target io.Writer
-func (w Writer) Write(p []byte) (n int, err error) {
+func (w writer) Write(p []byte) (n int, err error) {
 	s := w.anonymyzer.Anonymize(string(p))
 	return w.target.Write([]byte(s))
 }
 
 func (a *Anonymizer) hashAndEncode(data []byte) string {
 	hasher := sha1.New()
+	hasher.Write(a.salt)
 	hasher.Write(data)
-	return encode(hasher.Sum(a.salt))
+	return encode(hasher.Sum(nil))
 }
 
 // defaultAnonymizer - anonymizer used for package global functions.
@@ -140,9 +147,9 @@ func Anonymize(input string) string {
 	return defaultAnonymizer.Anonymize(input)
 }
 
-// NewWriter - return new Writer to anonymize all of the data written to target io.Writer
+// Writer - return new Writer to anonymize all of the data written to target io.Writer
 // using default anonymizer.
-func NewWriter(target io.Writer) Writer {
+func Writer(target io.Writer) writer {
 	return defaultAnonymizer.Writer(target)
 }
 

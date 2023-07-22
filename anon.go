@@ -122,11 +122,8 @@ func (a *Anonymizer) hashAndEncode(data []byte) string {
 	return encode(hasher.Sum(a.salt))
 }
 
-var (
-	defaultTypes = []DataType{Email, CreditCard, IP4, IP6, URL}
-	// defaultAnonymizer - anonymizer used for package global functions.
-	defaultAnonymizer = New(defaultTypes...)
-)
+// defaultAnonymizer - anonymizer used for package global functions.
+var defaultAnonymizer = New(Email, CreditCard, IP4, IP6, URL)
 
 // Hide - anonymize given value using default anonymizer.
 func Hide(v any) string {

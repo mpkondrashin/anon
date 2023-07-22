@@ -137,7 +137,7 @@ func encodeReference(data []byte) string {
 }
 
 func TestHide(t *testing.T) {
-	a := New(IP4 | IP6 | DNSName)
+	a := New(IP4, IP6, DNSName)
 	testCases := []struct {
 		input  string
 		prefix string
@@ -158,7 +158,7 @@ func TestHide(t *testing.T) {
 
 func TestOrder(t *testing.T) {
 	input := "My email is michael@yahoo.com - please write me a letter"
-	a := New(DNSName | Email).SetSalt([]byte{})
+	a := New(DNSName, Email).SetSalt([]byte{})
 	output := a.Anonymize(input)
 	t.Log(input)
 	t.Log(output)

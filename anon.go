@@ -30,6 +30,7 @@ import (
 // DataType - confidential data type
 
 //go:generate enum -package=anon -type=DataType -noprefix -values=Email,CreditCard,UUID3,UUID4,UUID5,UUID,Latitude,Longitude,IP4,IP6,DNSName,URL,SSN,IMEI,IMSI,E164
+//go:generate go fmt enum_datatype.go
 
 // Anonymizer - struct to anonymize text.
 type Anonymizer struct {

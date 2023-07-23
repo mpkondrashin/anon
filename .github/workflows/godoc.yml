@@ -1,5 +1,4 @@
-on: [pull_request]
-
+on: [push]
 jobs:
   main:
     runs-on: ubuntu-latest

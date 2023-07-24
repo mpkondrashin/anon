@@ -7,11 +7,12 @@ anon.go
 Go log anonymizer.
 */
 
-// Package anon provides ability to avoid logging sensitive data by anonymizing it automatically.
-// Anon supports IPv4, IPv6 and domain names and can be extended to other data types.
-// Each recognized piece of confidentional data will be changed to something like ```zjOZKfxm-4PpBYwD0r9iZQlguy8PEmvjBKwsHDtEuvGP6_EcyKmEC2```.
+// Package anon allows to avoid logging sensitive data by anonymizing it automatically or manually.
+// Anon supports IPv4, IPv6 and other types of data to anonymyze them them automatically.
+// List of sensitive data types can be extended if nessesary regex can be provided.
+// Each recognized piece of confidentional data will be changed to something like ```go7YgcKQDilELf_iQr3HIXGHE-d```.
 // This value will be the same for all same values for this program run.
-// On the next run, this string of characters will be different, but for same values it will still be the same.
+// On the next run, this string of characters will be different, but for same values within this run, it will still be the same.
 // This property of obfuscated data gives ability to compare anonymized values.
 package anon
 
@@ -38,7 +39,7 @@ type Anonymizer struct {
 	confidentialDataList []confidentialData
 }
 
-// New - return new Anonymizer with random salt.
+// New - return new Anonymizer with random saltthat will obfuscate automatically given list of types.
 func New(types ...DataType) *Anonymizer {
 	a := Anonymizer{
 		salt: randomSalt(),
@@ -68,12 +69,11 @@ func (a *Anonymizer) AddConfidentialData(prefix string, regex *regexp.Regexp, ex
 	return a
 }
 
-// AddConfidentialDomain provides ability to anonymize DNS names for given top level domain.
-func (a *Anonymizer) AddConfidentialDomain(tld string) *Anonymizer {
-	a.confidentialDataList = append(a.confidentialDataList, confidentialData{
-		prefix: "DNS",
-		regex:  regexp.MustCompile(PatternDNSSubDomain + regexp.QuoteMeta(tld)),
-	})
+// AddConfidentialDomains provides ability to anonymize DNS names for given top level domains.
+func (a *Anonymizer) AddConfidentialDomains(tlds ...string) *Anonymizer {
+	for _, tld := range tlds {
+		a.AddConfidentialData("DNS", regexp.MustCompile(PatternDNSSubDomain+regexp.QuoteMeta(tld)), "")
+	}
 	return a
 }
 
@@ -93,9 +93,7 @@ func (a *Anonymizer) Hide(v any) string {
 func (a *Anonymizer) Anonymize(input string) (result string) {
 	result = input
 	for _, each := range a.confidentialDataList {
-		//fmt.Fprintln(os.Stderr, result)
 		result = each.regex.ReplaceAllStringFunc(result, func(s string) string {
-			//fmt.Print("RRR", result)
 			return each.prefix + ":" + a.hashAndEncode([]byte(s))
 		})
 	}
@@ -148,7 +146,7 @@ func Anonymize(input string) string {
 	return defaultAnonymizer.Anonymize(input)
 }
 
-// Writer - return new Writer to anonymize all of the data written to target io.Writer
+// Writer - return new io.Writer to anonymize all of the data before writing it to target
 // using default anonymizer.
 func Writer(target io.Writer) writer {
 	return defaultAnonymizer.Writer(target)

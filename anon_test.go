@@ -28,6 +28,7 @@ func TestHide(t *testing.T) {
 		{"1.2.3.4", "IP:"},
 		{"1:2:3:4:5:6:7:8", "IP6:"},
 		{"www.com", "DNS:"},
+		{"gopkg.in", "DNS:"},
 	}
 	for _, tCase := range testCases {
 		actual := a.Hide(tCase.input)
@@ -48,7 +49,7 @@ func TestOrder(t *testing.T) {
 }
 
 func ExampleAnonymizer_Anonymize() {
-	a := New(IP4).AddConfidentialDomain("local").SetSalt([]byte{})
+	a := New(IP4).AddConfidentialDomains("local").SetSalt([]byte{})
 	fmt.Println(a.Anonymize("My address is 192.168.10.25 or tiger.local"))
 	// Output: My address is IP:go7YgcKQDilELfBiQr3HIXGHEXd or DNS:hAX_ZtbMRi9jd38jWFMpLkx9Tgd
 }
@@ -58,9 +59,17 @@ func ExampleAnonymizer_Hide_arbitrary() {
 	// Output: YC1WCkLbAoVYEVi5q7dRAVD2bz1
 }
 func ExampleAnonymizer_Hide_ip() {
-	a := New(IP4).AddConfidentialDomain("local").SetSalt([]byte{})
+	a := New(IP4).SetSalt([]byte{})
 	fmt.Println(a.Hide("10.10.1.1"))
 	// Output: IP:Fi3c0rJAQm7qTtitvGsaM5EZ5H6
+}
+
+func ExampleAnonymizer_AddConfidentialDomain() {
+	a := New().AddConfidentialDomains("in").SetSalt([]byte{})
+	fmt.Println(a.Anonymize("gopkg.in"))
+	fmt.Println(a.Anonymize("github.com"))
+	// Output: DNS:bfiDh2jDhL3kspiT4PgCsY-yPZ8
+	// github.com
 }
 
 func ExampleAnonymizer_AddConfidentialData() {

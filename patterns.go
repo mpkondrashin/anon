@@ -74,26 +74,25 @@ var (
 )
 
 type confidentialData struct {
-	prefix  string
-	regex   *regexp.Regexp
-	example string
+	prefix string
+	regex  *regexp.Regexp
 }
 
 var confidentailData = map[DataType]confidentialData{
-	Email:      {"Email", rxEmail, ""},
-	CreditCard: {"CreditCard", rxCreditCard, ""},
-	UUID3:      {"UUID3", rxUUID3, ""},
-	UUID4:      {"UUID4", rxUUID4, ""},
-	UUID5:      {"UUID5", rxUUID5, ""},
-	UUID:       {"UUID", rxUUID, ""},
-	Latitude:   {"Latidude", rxLatitude, ""},
-	Longitude:  {"Longitude", rxLongitude, ""},
-	IP4:        {"IP", rxIPv4, ""},
-	IP6:        {"IP6", rxIPv6, ""},
-	DNSName:    {"DNS", rxDNSName, ""},
-	URL:        {"URL", rxURL, ""},
-	SSN:        {"SSN", rxSSN, ""},
-	IMEI:       {"IMEI", rxIMEI, ""},
-	IMSI:       {"IMSI", rxIMSI, ""},
-	E164:       {"E162", rxE164, ""},
+	Email:      {"Email", rxEmail},
+	CreditCard: {"CreditCard", rxCreditCard},
+	UUID3:      {"UUID3", rxUUID3},
+	UUID4:      {"UUID4", rxUUID4},
+	UUID5:      {"UUID5", rxUUID5},
+	UUID:       {"UUID", rxUUID},
+	Latitude:   {"Latidude", rxLatitude},
+	Longitude:  {"Longitude", rxLongitude},
+	IP4:        {"IP", rxIPv4},
+	IP6:        {"IP6", rxIPv6},
+	DNSName:    {"DNS", rxDNSName},
+	URL:        {"URL", rxURL},
+	SSN:        {"SSN", rxSSN},
+	IMEI:       {"IMEI", rxIMEI},
+	IMSI:       {"IMSI", rxIMSI},
+	E164:       {"E162", rxE164},
 }

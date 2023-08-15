@@ -18,6 +18,7 @@ package anon
 
 import (
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math/rand"
@@ -39,7 +40,7 @@ type Anonymizer struct {
 	confidentialDataList []confidentialData
 }
 
-// New - return new Anonymizer with random saltthat will obfuscate automatically given list of types.
+// New - return new Anonymizer with random salt that will obfuscate automatically given list of types.
 func New(types ...DataType) *Anonymizer {
 	a := Anonymizer{
 		salt: randomSalt(),
@@ -52,32 +53,30 @@ func New(types ...DataType) *Anonymizer {
 	return &a
 }
 
-// SetSalt - set salt value instead generated randomly.
+// SetSalt - set salt value instead of generated randomly.
 func (a *Anonymizer) SetSalt(salt []byte) *Anonymizer {
 	a.salt = salt
 	return a
 }
 
-// AddConfidentialData provides ability to extend list of types of anonymized data
-// as soon as appropriate regex can be provided.
+// AddConfidentialData provides ability to extend list of types of anonymized data.
 func (a *Anonymizer) AddConfidentialData(prefix string, regex *regexp.Regexp, example string) *Anonymizer {
 	a.confidentialDataList = append(a.confidentialDataList, confidentialData{
-		prefix:  prefix,
-		regex:   regex,
-		example: example,
+		prefix: prefix,
+		regex:  regex,
 	})
 	return a
 }
 
-// AddConfidentialDomains provides ability to anonymize DNS names for given top level domains.
-func (a *Anonymizer) AddConfidentialDomains(tlds ...string) *Anonymizer {
+// AddDomains provides ability to anonymize DNS names for given top level domains.
+func (a *Anonymizer) AddDomains(tlds ...string) *Anonymizer {
 	for _, tld := range tlds {
 		a.AddConfidentialData("DNS", regexp.MustCompile(PatternDNSSubDomain+regexp.QuoteMeta(tld)), "")
 	}
 	return a
 }
 
-// Hide - anonymize given value
+// Hide - anonymize given value. Prefix will be added automatically, if type will be detected.
 func (a *Anonymizer) Hide(v any) string {
 	s := fmt.Sprintf("%v", v)
 	h := a.hashAndEncode([]byte(s))
@@ -89,7 +88,7 @@ func (a *Anonymizer) Hide(v any) string {
 	return h
 }
 
-// Anonymize - anonymyzer confidential data found in string.
+// Anonymize - anonymyze confidential data found in string.
 func (a *Anonymizer) Anonymize(input string) (result string) {
 	result = input
 	for _, each := range a.confidentialDataList {
@@ -125,7 +124,7 @@ func (a *Anonymizer) hashAndEncode(data []byte) string {
 	hasher := sha1.New()
 	hasher.Write(a.salt)
 	hasher.Write(data)
-	return encode(hasher.Sum(nil))
+	return base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
 }
 
 // defaultAnonymizer - anonymizer used for package global functions.
@@ -165,39 +164,41 @@ func randomSalt() []byte {
 	return salt
 }
 
-func encode(data []byte) string {
-	characters := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRTSUVWXYZ-_"
-	length := (len(data)*4 + 2) / 3
-	result := make([]byte, length)
-	r := 0
-	for i := 0; i < len(data); i++ {
-		switch i % 3 {
-		case 0:
-			c := data[i]
-			result[r] = characters[c&0x3F]
-			r++
-			if i == len(data)-1 {
-				c := data[i] >> 6
-				result[r] = characters[c&0x3F]
+/*
+	func _encode(data []byte) string {
+		abc := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRTSUVWXYZ-_"
+		length := (len(data)*4 + 2) / 3
+		result := make([]byte, length)
+		r := 0
+		for i := 0; i < len(data); i++ {
+			switch i % 3 {
+			case 0:
+				c := data[i]
+				result[r] = abc[c&0x3F]
+				r++
+				if i == len(data)-1 {
+					c := data[i] >> 6
+					result[r] = abc[c&0x3F]
+					r++
+				}
+			case 1:
+				c := data[i]<<2 | data[i-1]>>6
+				result[r] = abc[c&0x3F]
+				r++
+				if i == len(data)-1 {
+					c := data[i] >> 4
+					result[r] = abc[c&0x3F]
+					r++
+				}
+			case 2:
+				c := data[i]<<4 | data[i-1]>>4
+				result[r] = abc[c&0x3F]
+				r++
+				c = data[i] >> 2
+				result[r] = abc[c&0x3F]
 				r++
 			}
-		case 1:
-			c := data[i]<<2 | data[i-1]>>6
-			result[r] = characters[c&0x3F]
-			r++
-			if i == len(data)-1 {
-				c := data[i] >> 4
-				result[r] = characters[c&0x3F]
-				r++
-			}
-		case 2:
-			c := data[i]<<4 | data[i-1]>>4
-			result[r] = characters[c&0x3F]
-			r++
-			c = data[i] >> 2
-			result[r] = characters[c&0x3F]
-			r++
 		}
+		return string(result)
 	}
-	return string(result)
-}
+*/
